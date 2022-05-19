@@ -12,7 +12,7 @@ ma = Marshmallow()
 jwt = JWTManager()
 flsk_bcrypt = Bcrypt()
 
-def create_app(config_type=configuration['testing']):
+def create_app(config_type=configuration['production']):
     app = Flask(__name__)
     CORS(app)
     db.init_app(app)
