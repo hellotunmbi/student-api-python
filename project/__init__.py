@@ -6,12 +6,15 @@ from flask_marshmallow import Marshmallow
 from flask_jwt_extended import JWTManager
 from flask_bcrypt import Bcrypt
 
-
+#instantiating flask modules
 db = SQLAlchemy()
 ma = Marshmallow()
 jwt = JWTManager()
 flsk_bcrypt = Bcrypt()
 
+
+# function that initialises the modules, blueprints and config keys with the app object
+# ALWAYS CHANGE CONFIG KEY TO PRODUCTION WHEN PUSHING !!!
 def create_app(config_type=configuration['production']):
     app = Flask(__name__)
     CORS(app)

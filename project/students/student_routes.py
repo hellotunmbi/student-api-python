@@ -9,6 +9,9 @@ from project import db, jwt, flsk_bcrypt
 from .models import User, Student, StudentSchema, Course, CourseSchema
 from . import student
 
+# this decorator and the one below are for assigning the current user from JWT
+# to a user from the db when a user logs in
+# I no sabi as e dey work but it sha works
 @jwt.user_identity_loader
 def user_identity_lookup(user):
     '''
@@ -30,11 +33,14 @@ def user_lookup_callback(_jwt_header, jwt_payload):
     identity = jwt_payload["sub"]
     return User.query.filter_by(id=identity).one_or_none()
 
+
+#this is an endpoint to register a user that wants to use the app to register students
 @student.post('/register_user')
 def register_user():
     try:
         data = request.get_json()
 
+        # these are re patterns to make sure an inputed email is actually an email and an inputed password is strong
         email_regex = '^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w{2,3}$'
         pass_reg = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!#%*?&]{8,18}$"
 
@@ -43,16 +49,20 @@ def register_user():
         if not (re.search(pass_reg, data["password"])):
             return jsonify({"error":"invalid password format"}), 400
 
-                        
+        # here, we are checking if a user exists in the database already
         user = User.query.filter_by(email=data["email"]).first()
         if user:
             return jsonify({"error":"user already exists"}), 400
- 
+
+        # in the case of a data breach the password has been encrypted by bcrypt
+        # the encrypted passwords are stored in the database so only the setter of a password can access it
         crypt_pass = flsk_bcrypt.generate_password_hash(data["password"]).decode('utf-8')
 
+        # storing names in lower case so that there can be consistency in the database
         stored_first_name = data["first_name"].lower()
         stored_last_name = data["last_name"].lower()
 
+        # adding the user to the database
         new_user = User(
             first_name=stored_first_name,
             last_name=stored_last_name,
@@ -69,8 +79,9 @@ def register_user():
     except Exception as e:
         db.session.rollback()
         print (e)
-        return jsonify ({"error":"check input"})
+        return jsonify ({"error":"check input"}), 422
 
+# this endpoint is for loging in users
 @student.route('/login', methods=['POST'])
 def login():
     try:
@@ -78,9 +89,11 @@ def login():
 
         user = User.query.filter_by(email=data["email"]).first()
 
+        # checking user existence and password
         if user:
             pass_check = flsk_bcrypt.check_password_hash(user.password, data["password"])
             if pass_check:
+                # creating a jwt access token for authentication
                 access_token = create_access_token(identity=user)
                 return jsonify ({"status":"login success", 'access_token': access_token})
             else:
@@ -93,6 +106,7 @@ def login():
         print (e)
         return jsonify ({"error": "check inputs"}), 400
 
+# endpoint for registering a student. Can only be accessed when a user logs in
 @student.post('/register_student')
 @jwt_required()
 def register_student():
@@ -151,6 +165,11 @@ def edit_student_info(id):
         if not student:
             return jsonify ({'status':'failed', 'msg':'User not found'}), 400
 
+        if data.get('new_email'):
+            check_student = Student.query.filter_by(email=data['new_email']).first()
+            if check_student:
+                return jsonify ({'status':'failed', 'msg':'email already in use'}), 400
+
         student.first_name = data['new_first_name'] if data.get('new_first_name') else student.first_name
         student.last_name = data['new_last_name'] if data.get('new_last_name') else student.last_name
         student.age = data['new_age'] if data.get('new_age') else student.age
@@ -180,6 +199,7 @@ def edit_student_courses(id):
         if not student:
             return jsonify ({'status':'failed', 'msg':'Student not found'}), 400
 
+        # checking if a course is already listed with a user
         if (course.course for course in courses in data['added_courses']):
             return jsonify ({'status':'failed', 'msg':'please only add new courses'}), 400
 

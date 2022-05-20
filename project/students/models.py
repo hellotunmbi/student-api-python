@@ -2,9 +2,11 @@ from project import db, ma
 from datetime import datetime, timedelta
 from secrets import token_hex
 
-
+# string used for the id for security reasons
 id_number = token_hex(20)
 
+# DB representation of the User table
+# this table is for the Users that register students
 class User(db.Model):
     __tablename__ = 'User'
 
@@ -16,7 +18,8 @@ class User(db.Model):
     password = db.Column(db.String(50), nullable=False, unique=True)
     date_joined = db.Column(db.DateTime, nullable=False, default=datetime.utcnow())
 
-
+# DB representation of the student table
+# this table is for the students being registered
 class Student(db.Model):
     __tablename__ = 'Student'
 
@@ -37,6 +40,9 @@ class StudentSchema(ma.Schema):
     class Meta:
         fields = ("id", "first_name", "last_name", "email", "age", "gender", "date_added", "courses")
 
+
+# DB representation of the course table
+# relational table with students in the event that a student has more than one course
 class Course(db.Model):
     __tablename__ = 'Course'
 

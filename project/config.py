@@ -1,6 +1,7 @@
 from os import environ
 
 
+# classes to get app config keys from the environment 
 class Config:
     DEBUG = True
     TESTING = False
