@@ -26,6 +26,6 @@ def create_app(config_type=configuration['testing']):
     
 
     from .students import student as student_details
-    app.register_blueprint(student_details, url_prefix='/api/v1/investor')
+    app.register_blueprint(student_details, url_prefix='/api/v1')
 
     return app
