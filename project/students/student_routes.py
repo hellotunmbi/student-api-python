@@ -108,7 +108,7 @@ def login():
 
 # endpoint for registering a student. Can only be accessed when a user logs in
 @student.post('/register_student')
-@jwt_required()
+# @jwt_required()
 def register_student():
     try:
         data = request.get_json()
@@ -122,7 +122,7 @@ def register_student():
         if student:
             return jsonify({"error":"student already exists"}), 400
 
-        if isinstance(data['added_courses'], list) == False:
+        if isinstance(data['courses'], list) == False:
             return jsonify ({'status':'failed', 'msg':'please make sure courses are in a list'}), 400
 
         stored_first_name = data["first_name"].lower()
@@ -156,7 +156,7 @@ def register_student():
         return jsonify ({'status':'failed', 'msg':'something went wrong, please check inputs'}), 422
 
 @student.put('/edit_student_info/<int:id>')
-@jwt_required()
+# @jwt_required()
 def edit_student_info(id):
     try:
         data = request.get_json()
@@ -169,6 +169,11 @@ def edit_student_info(id):
             check_student = Student.query.filter_by(email=data['new_email']).first()
             if check_student:
                 return jsonify ({'status':'failed', 'msg':'email already in use'}), 400
+
+            email_regex = '^[a-z0-9]+[\._]?[a-z0-9]+[@]\w+[.]\w{2,3}$'
+
+            if not (re.search(email_regex, data["new_email"])):
+                return jsonify({"error":"invalid email format"}), 400
 
         student.first_name = data['new_first_name'] if data.get('new_first_name') else student.first_name
         student.last_name = data['new_last_name'] if data.get('new_last_name') else student.last_name
@@ -187,7 +192,7 @@ def edit_student_info(id):
         return jsonify ({'status':'failed', 'msg':'something went wrong, please check inputs'}), 422
 
 @student.post('/add_student_courses/<int:id>')
-@jwt_required()
+# @jwt_required()
 def edit_student_courses(id):
     try:
 
@@ -199,17 +204,18 @@ def edit_student_courses(id):
         if not student:
             return jsonify ({'status':'failed', 'msg':'Student not found'}), 400
 
-        # checking if a course is already listed with a user
-        if (course.course for course in courses in data['added_courses']):
-            return jsonify ({'status':'failed', 'msg':'please only add new courses'}), 400
-
         if isinstance(data['added_courses'], list) == False:
             return jsonify ({'status':'failed', 'msg':'please make sure courses are in a list'}), 400
+
+        # checking if a course is already listed with a user
+        check = any(item in [course.course for course in courses] for item in data["added_courses"])
+        if check:
+            return jsonify ({'status':'failed', 'msg':'please only add new courses'}), 400
 
         for course in data['added_courses']:
             new_courses = Course(
                 course = course.lower(),
-                user = student
+                student = student
             )
 
             db.session.add(new_courses)
@@ -224,7 +230,7 @@ def edit_student_courses(id):
         return jsonify ({'status':'failed', 'msg':'something went wrong, please check inputs'}), 422
 
 @student.delete('/delete_student_courses/<int:id>/<string:name>')
-@jwt_required()
+# @jwt_required()
 def delete_student_course(id, name):
     try:
         student = Student.query.get(id)
@@ -249,7 +255,7 @@ def delete_student_course(id, name):
         
 
 @student.delete('/delete_student/<int:id>')
-@jwt_required()
+# @jwt_required()
 def delete_user(id):
     try:
         student = Student.query.get(id)
@@ -268,7 +274,7 @@ def delete_user(id):
         return jsonify ({'status':'failed', 'msg':'something went wrong, please check inputs'}), 422
 
 @student.get('/get_all_students')
-@jwt_required()
+# @jwt_required()
 def get_all_students():
     try:
         students = Student.query.all()
@@ -286,7 +292,7 @@ def get_all_students():
 
 
 @student.get('/get_student/<int:id>')
-@jwt_required()
+# @jwt_required()
 def get_student(id):
     try:
         student = Student.query.get(id)
