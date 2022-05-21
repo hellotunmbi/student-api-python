@@ -15,14 +15,15 @@ flsk_bcrypt = Bcrypt()
 
 # function that initialises the modules, blueprints and config keys with the app object
 # ALWAYS CHANGE CONFIG KEY TO PRODUCTION WHEN PUSHING !!!
-def create_app(config_type=configuration['production']):
+def create_app(config_type=configuration['testing']):
     app = Flask(__name__)
+    app.config.from_object(config_type) # declare this before init db, it will work either way but this will remove the error
     CORS(app)
     db.init_app(app)
     ma.init_app(app)
     jwt.init_app(app)
     flsk_bcrypt.init_app(app)
-    app.config.from_object(config_type)
+    
 
     from .students import student as student_details
     app.register_blueprint(student_details, url_prefix='/api/v1/investor')
